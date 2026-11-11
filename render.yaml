@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: agrovia-demo
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-web.txt
+    startCommand: gunicorn dash_app:server --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.9
