@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from zipfile import ZipFile
 import xml.etree.ElementTree as ET
+import sys
 
 import dash
 import dash_mantine_components as dmc
@@ -24,7 +25,27 @@ app = dash.Dash(
 app.title = "AgroVIA UI Clone"
 server = app.server
 
-TERMS_DOCX_PATH = Path(__file__).resolve().parent / "agro-via-next" / "src" / "AgroVIA_Terminos_y_Condiciones.docx"
+TERMS_DOCX_NAME = "AgroVIA_Terminos_y_Condiciones.docx"
+
+
+def find_terms_document(app_dir: Path, bundle_dir: Path | None = None) -> Path:
+    search_dirs = [app_dir]
+    if bundle_dir and bundle_dir != app_dir:
+        search_dirs.append(bundle_dir)
+
+    candidates = [
+        directory / relative_path / TERMS_DOCX_NAME
+        for directory in search_dirs
+        for relative_path in (Path("agro-via-next/src"), Path("."), Path("src"))
+    ]
+    return next((path for path in candidates if path.is_file()), candidates[0])
+
+
+APP_DIR = Path(__file__).resolve().parent
+TERMS_DOCX_PATH = find_terms_document(
+    APP_DIR,
+    Path(sys._MEIPASS) if getattr(sys, "_MEIPASS", None) else None,
+)
 
 
 def load_docx_paragraphs(path: Path) -> list[str]:
@@ -41,7 +62,11 @@ def load_docx_paragraphs(path: Path) -> list[str]:
                 paragraphs.append(text)
         return paragraphs
     except Exception:
-        return ["No se pudo cargar el documento AgroVIA_Terminos_y_Condiciones.docx."]
+        return [
+            "No se pudo leer el documento de términos. Verifica que "
+            "AgroVIA_Terminos_y_Condiciones.docx esté en la raíz del proyecto "
+            "o en agro-via-next/src/."
+        ]
 
 
 AGROVIA_TERMINOS = load_docx_paragraphs(TERMS_DOCX_PATH)
